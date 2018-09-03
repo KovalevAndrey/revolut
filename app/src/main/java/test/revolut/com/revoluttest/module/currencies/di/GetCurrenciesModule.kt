@@ -12,9 +12,7 @@ import io.reactivex.subjects.PublishSubject
 import test.revolut.com.revoluttest.application.api.RevolutApi
 import test.revolut.com.revoluttest.module.CurrencyRatesRepositoryImpl
 import test.revolut.com.revoluttest.module.CurrencyRatesUpdater
-import test.revolut.com.revoluttest.module.currencies.CurrenciesPresenterImpl
-import test.revolut.com.revoluttest.module.currencies.GetCurrenciesInteractor
-import test.revolut.com.revoluttest.module.currencies.GetCurrenciesInteractorImpl
+import test.revolut.com.revoluttest.module.currencies.*
 import test.revolut.com.revoluttest.module.currencies.item.CurrencyClickListener
 import test.revolut.com.revoluttest.module.currencies.item.CurrencyItemBlueprint
 import test.revolut.com.revoluttest.module.currencies.item.CurrencyItemPresenter
@@ -32,10 +30,16 @@ class GetCurrenciesModule(private val context: Context,
     @PerActivity
     internal fun providePresenter(interactor: GetCurrenciesInteractor,
                                   schedulersFactory: SchedulersFactory,
-                                  repository: CurrencyRatesRepositoryImpl,
+                                  currencyValueTransformer: CurrencyValueTransformer,
                                   adapterPresenter: AdapterPresenter): CurrenciesPresenterImpl {
         return CurrenciesPresenterImpl(interactor, schedulersFactory,
-                adapterPresenter, currentValueSubject, repository, presenterState)
+                adapterPresenter, currentValueSubject, currencyValueTransformer, presenterState)
+    }
+
+    @Provides
+    @PerActivity
+    internal fun provideCurrencyValueTransformer(repository: CurrencyRatesRepositoryImpl): CurrencyValueTransformer {
+        return CurrencyValueTransformerImpl(repository)
     }
 
     @Provides

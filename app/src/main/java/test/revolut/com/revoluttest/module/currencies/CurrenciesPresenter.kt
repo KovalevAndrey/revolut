@@ -3,18 +3,18 @@ package test.revolut.com.revoluttest.module.currencies
 import android.os.Bundle
 import com.avito.konveyor.adapter.AdapterPresenter
 import com.avito.konveyor.data_source.ListDataSource
+import com.petertackage.kotlinoptions.filterNotNone
+import com.petertackage.kotlinoptions.optionOf
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.subjects.PublishSubject
 import test.revolut.com.revoluttest.module.Currency
-import test.revolut.com.revoluttest.module.CurrencyRatesRepository
 import test.revolut.com.revoluttest.module.currencies.item.CurrencyClickListener
 import test.revolut.com.revoluttest.module.currencies.item.CurrencyItem
 import test.revolut.com.revoluttest.module.currencies.ui.CurrenciesView
 import test.revolut.com.revoluttest.utils.SchedulersFactory
 import test.revolut.com.revoluttest.utils.asArrayList
 import java.math.BigDecimal
-import java.math.RoundingMode
 
 interface CurrenciesPresenter {
 
@@ -31,13 +31,14 @@ class CurrenciesPresenterImpl(
         private val schedulersFactory: SchedulersFactory,
         private val adapterPresenter: AdapterPresenter,
         private val currencyObservable: PublishSubject<Pair<String, BigDecimal>>,
-        private val repository: CurrencyRatesRepository,
+        private val currencyValueTransformer: CurrencyValueTransformer,
         savedState: Bundle?
 ) : CurrenciesPresenter, CurrencyClickListener {
 
     private var disposables = CompositeDisposable()
     private var view: CurrenciesView? = null
-    private var currencyItems: MutableList<CurrencyItem>? = savedState?.getParcelableArrayList(KEY_ITEMS)
+    private var currencyItems: MutableList<CurrencyItem> = savedState?.getParcelableArrayList(KEY_ITEMS)
+            ?: buildInitialData()
     private var cachedPair: Pair<String, BigDecimal>? = savedState?.getSerializable(KEY_PAIR) as? Pair<String, BigDecimal>
     private var pollingDisposable: Disposable? = null
 
@@ -48,57 +49,39 @@ class CurrenciesPresenterImpl(
 
     override fun attachView(view: CurrenciesView) {
         this.view = view
-        val items = currencyItems ?: buildInitialData()
-        currencyItems = items.toMutableList()
-        updateDataSource(items)
-//        pollingDisposable = interactor.startPolling()
-//                .observeOn(schedulersFactory.mainThread())
-//                .subscribe { }
+        updateDataSource(currencyItems)
+        subscribeToValueChanges()
+        startPolling()
+    }
+
+    private fun startPolling() {
         pollingDisposable = interactor.startPolling()
+                .map {
+                    optionOf(cachedPair?.let {
+                        currencyValueTransformer.transformItems(it, currencyItems)
+                    })
+                }
+                .filterNotNone()
                 .observeOn(schedulersFactory.mainThread())
-                .subscribe {
-                    cachedPair?.let {
-                        updateItems(it)
-                    }
+                .subscribe { items ->
+                    updateDataSourceRange(items)
                 }
     }
 
-    private fun subscribe() {
+    private fun subscribeToValueChanges() {
         disposables.add(currencyObservable
+                .map { newSource ->
+                    cachedPair = newSource
+                    optionOf(currencyValueTransformer.transformItems(newSource, currencyItems))
+                }
+                .filterNotNone()
                 .subscribeOn(schedulersFactory.mainThread())
                 .observeOn(schedulersFactory.mainThread())
-                .subscribe {
-                    cachedPair = it
-                    updateItems(it)
+                .subscribe { items ->
+                    items?.let {
+                        updateDataSourceRange(it)
+                    }
                 })
-//
-//        disposables.add(interactor.startPolling()
-//                .observeOn(schedulersFactory.mainThread())
-//                .subscribe {
-//                    cachedPair?.let {
-//                        updateItems(it)
-//                    }
-//                })
-    }
-
-    private fun updateItems(pair: Pair<String, BigDecimal>) {
-        val rates = repository.getCurrencyRates()
-        val selectedCurrency = pair.first
-        val selectedCurrencyCount = pair.second
-        if (rates != null) {
-            currencyItems?.forEach {
-                val thisCurrency = it.stringId
-                val thisCurrencyValue = rates[thisCurrency]
-                val selectedCurrencyValue = rates[selectedCurrency]
-                if (thisCurrencyValue != null && selectedCurrencyValue != null) {
-                    val thisCurrencyCount = thisCurrencyValue.divide(selectedCurrencyValue, 2, RoundingMode.CEILING).multiply(selectedCurrencyCount)
-                    it.value = thisCurrencyCount.setScale(2, RoundingMode.CEILING)
-                }
-            }
-        }
-        currencyItems?.let {
-            updateDataSourceRange(it)
-        }
     }
 
     override fun detachView() {
@@ -111,7 +94,6 @@ class CurrenciesPresenterImpl(
         val dataSource = ListDataSource(items)
         adapterPresenter.onDataSourceChanged(dataSource)
         view?.onDataSourceChanged()
-        subscribe()
     }
 
     private fun updateDataSourceRange(items: List<CurrencyItem>) {
@@ -122,23 +104,21 @@ class CurrenciesPresenterImpl(
 
     override fun onCurrencyClicked(item: CurrencyItem) {
         disposables.clear()
-        val items = currencyItems ?: return
-        items.forEach {
+        currencyItems.forEach {
             it.isMainCurrency = false
         }
         item.isMainCurrency = true
-        if (items.remove(item)) {
-            items.add(0, item)
+        if (currencyItems.remove(item)) {
+            currencyItems.add(0, item)
         }
-        currencyItems = items
-        updateDataSource(items)
-        subscribe()
+        updateDataSource(currencyItems)
+        subscribeToValueChanges()
     }
 
-    private fun buildInitialData(): List<CurrencyItem> {
+    private fun buildInitialData(): MutableList<CurrencyItem> {
         return Currency.values().map {
             CurrencyItem(it.name)
-        }
+        }.toMutableList()
     }
 
 }
