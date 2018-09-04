@@ -37,8 +37,8 @@ class CurrenciesPresenterImpl(
 
     private var disposables = CompositeDisposable()
     private var view: CurrenciesView? = null
-    private var currencyItems: MutableList<CurrencyItem> = savedState?.getParcelableArrayList(KEY_ITEMS)
-            ?: buildInitialData()
+    private var currencyItems: List<CurrencyItem> = savedState?.getParcelableArrayList(KEY_ITEMS)
+    ?: buildInitialData()
     private var cachedPair: Pair<String, BigDecimal>? = savedState?.getSerializable(KEY_PAIR) as? Pair<String, BigDecimal>
     private var pollingDisposable: Disposable? = null
 
@@ -108,17 +108,19 @@ class CurrenciesPresenterImpl(
             it.isMainCurrency = false
         }
         item.isMainCurrency = true
-        if (currencyItems.remove(item)) {
-            currencyItems.add(0, item)
+        val items = currencyItems.toMutableList()
+        if (items.remove(item)) {
+            items.add(0, item)
         }
+        currencyItems = items
         updateDataSource(currencyItems)
         subscribeToValueChanges()
     }
 
-    private fun buildInitialData(): MutableList<CurrencyItem> {
+    private fun buildInitialData(): List<CurrencyItem> {
         return Currency.values().map {
             CurrencyItem(it.name)
-        }.toMutableList()
+        }
     }
 
 }

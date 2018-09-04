@@ -1,4 +1,4 @@
-package test.scyscanner.com.scyscannertest
+package test.scyscanner.com.revoluttest
 
 import org.robolectric.RobolectricTestRunner
 

@@ -4,12 +4,14 @@ import android.app.Application
 import android.content.Context
 import dagger.Module
 import dagger.Provides
+import test.revolut.com.revoluttest.application.TestApp
+import test.revolut.com.revoluttest.module.CurrencyRatesRepositoryImpl
 import test.revolut.com.revoluttest.utils.SchedulersFactory
 import test.revolut.com.revoluttest.utils.SchedulersFactoryImpl
 import javax.inject.Singleton
 
 @Module(includes = [ApiModule::class])
-class ApplicationModule(private val app: test.revolut.com.revoluttest.application.TestApp) {
+class ApplicationModule(private val app: TestApp) {
 
     @Provides
     @Singleton
@@ -19,7 +21,7 @@ class ApplicationModule(private val app: test.revolut.com.revoluttest.applicatio
 
     @Provides
     @Singleton
-    fun provideAvitoApp(): test.revolut.com.revoluttest.application.TestApp {
+    fun provideAvitoApp(): TestApp {
         return app
     }
 
@@ -34,6 +36,12 @@ class ApplicationModule(private val app: test.revolut.com.revoluttest.applicatio
     @Singleton
     fun provideSchedulersFactory(): SchedulersFactory {
         return SchedulersFactoryImpl()
+    }
+
+    @Provides
+    @Singleton
+    internal fun provideCurrencyRatesRepository(): CurrencyRatesRepositoryImpl {
+        return CurrencyRatesRepositoryImpl()
     }
 
 }

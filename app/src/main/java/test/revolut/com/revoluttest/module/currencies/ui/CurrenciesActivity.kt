@@ -25,7 +25,7 @@ class CurrenciesActivity : AppCompatActivity() {
         setContentView(R.layout.currency_activity)
         TestApp.instance
                 .component
-                .plus(GetCurrenciesModule(this.baseContext, presenterState))
+                .plus(GetCurrenciesModule(presenterState))
                 .inject(this)
         val currencyView = CurrenciesViewImpl(findViewById(R.id.content), itemBinder, adapterPresenter)
         presenter.attachView(currencyView)

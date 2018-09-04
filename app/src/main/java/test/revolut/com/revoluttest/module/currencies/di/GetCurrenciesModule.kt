@@ -1,6 +1,5 @@
 package test.revolut.com.revoluttest.module.currencies.di
 
-import android.content.Context
 import android.os.Bundle
 import com.avito.konveyor.ItemBinder
 import com.avito.konveyor.adapter.AdapterPresenter
@@ -21,8 +20,7 @@ import test.revolut.com.revoluttest.utils.SchedulersFactory
 import java.math.BigDecimal
 
 @Module
-class GetCurrenciesModule(private val context: Context,
-                          private val presenterState: Bundle?) {
+class GetCurrenciesModule(private val presenterState: Bundle?) {
 
     private val currentValueSubject = PublishSubject.create<Pair<String, BigDecimal>>()
 
@@ -44,12 +42,6 @@ class GetCurrenciesModule(private val context: Context,
 
     @Provides
     @PerActivity
-    internal fun provideCurrencyRatesRepository(): CurrencyRatesRepositoryImpl {
-        return CurrencyRatesRepositoryImpl()
-    }
-
-    @Provides
-    @PerActivity
     internal fun provideCurrencyRatesUpdater(repository: CurrencyRatesRepositoryImpl): CurrencyRatesUpdater {
         return repository
     }
@@ -67,7 +59,6 @@ class GetCurrenciesModule(private val context: Context,
                                                  updater: CurrencyRatesUpdater): GetCurrenciesInteractor {
         return GetCurrenciesInteractorImpl(api, schedulersFactory, updater)
     }
-
 
     @Provides
     @PerActivity

@@ -1,4 +1,4 @@
-package test.scyscanner.com.scyscannertest
+package test.scyscanner.com.revoluttest
 
 import uk.co.jemos.podam.api.PodamFactory
 import uk.co.jemos.podam.api.PodamFactoryImpl

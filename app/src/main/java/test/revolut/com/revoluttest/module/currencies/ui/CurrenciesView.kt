@@ -41,6 +41,6 @@ class CurrenciesViewImpl(
     }
 
     override fun onDataRangeChanged(start: Int, end: Int) {
-        adapter.notifyItemRangeChanged(start, end, null)
+        recyclerView.adapter.notifyItemRangeChanged(start, end)
     }
 }
