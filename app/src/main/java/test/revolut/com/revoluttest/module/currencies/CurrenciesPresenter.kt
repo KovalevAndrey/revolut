@@ -38,7 +38,7 @@ class CurrenciesPresenterImpl(
     private var disposables = CompositeDisposable()
     private var view: CurrenciesView? = null
     private var currencyItems: List<CurrencyItem> = savedState?.getParcelableArrayList(KEY_ITEMS)
-    ?: buildInitialData()
+            ?: buildInitialData()
     private var cachedPair: Pair<String, BigDecimal>? = savedState?.getSerializable(KEY_PAIR) as? Pair<String, BigDecimal>
     private var pollingDisposable: Disposable? = null
 
@@ -61,11 +61,12 @@ class CurrenciesPresenterImpl(
                         currencyValueTransformer.transformItems(it, currencyItems)
                     })
                 }
+                .retry()
                 .filterNotNone()
                 .observeOn(schedulersFactory.mainThread())
-                .subscribe { items ->
+                .subscribe({ items ->
                     updateDataSourceRange(items)
-                }
+                }, { })
     }
 
     private fun subscribeToValueChanges() {
